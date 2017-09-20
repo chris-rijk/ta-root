@@ -1,0 +1,32 @@
+dependencies {
+    compile project(':webservices-common-service')
+    compile project(':webservices-authentication-api')
+
+    testCompile libraries.mockito
+    testCompile libraries.jersey_test
+}
+
+apply plugin: 'docker'
+apply plugin: 'application'
+
+mainClassName = 'ta.microservices.authentication.service.startup.Bootstrap'
+jar {
+    manifest {
+        attributes 'Main-Class': mainClassName
+    }
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+}
+
+docker {
+    host = 'tcp://thd-dps-lnx-06.dev.ceb:2375'
+    imageName = 'webservices-authentication-service'
+    buildArgs = ['JAR_NAME': jar.archiveName]
+    files jar.archivePath
+    dependsOn build
+    clean {
+        force = true
+    }
+    run {
+        ports '18080:18080', '14096:14096'
+    }
+}

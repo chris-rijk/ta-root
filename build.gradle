@@ -1,0 +1,90 @@
+group 'gartner-ta'
+
+allprojects {
+    apply plugin: 'java'
+    apply plugin: 'jacoco'
+    apply plugin: 'idea'
+    version '1.0'
+    sourceCompatibility = 1.8
+    repositories {
+        jcenter()
+    }
+}
+
+ext.versions = [
+    jersey: "2.26-b09",
+    mockito: "2.8.47",
+    junit: "4.12",
+    jax_rs: "2.1"
+]
+
+ext.libraries = [
+    junit: "junit:junit:${versions.junit}",
+    mockito: "org.mockito:mockito-core:${versions.mockito}",
+    jax_rs: "javax.ws.rs:javax.ws.rs-api:${versions.jax_rs}",
+    jersey: [
+        "org.glassfish.jersey.containers:jersey-container-grizzly2-http:${versions.jersey}",
+        "org.glassfish.jersey.media:jersey-media-json-jackson:${versions.jersey}",
+        "org.glassfish.jersey.ext:jersey-proxy-client:${versions.jersey}",
+        "org.glassfish.jersey.inject:jersey-hk2:${versions.jersey}"
+    ],
+    jersey_test: [
+        "org.glassfish.jersey.test-framework:jersey-test-framework-util:${versions.jersey}",
+        "org.glassfish.jersey.test-framework:jersey-test-framework-core:${versions.jersey}",
+        "org.glassfish.jersey.test-framework.providers:jersey-test-framework-provider-grizzly2:${versions.jersey}"
+    ],
+    jwt: "io.jsonwebtoken:jjwt:0.7.0"
+]
+
+subprojects {
+    buildscript {
+        repositories {
+            jcenter()
+        }
+        dependencies {
+            classpath 'org.sgornostal:gradle-docker-plugin:1.5.3'
+        }
+    }
+
+    jacocoTestReport {
+        additionalSourceDirs = files(sourceSets.main.allSource.srcDirs)
+        sourceDirectories = files(sourceSets.main.allSource.srcDirs)
+        classDirectories =  files(sourceSets.main.output)
+        reports {
+            html.enabled = true
+            xml.enabled = true
+            csv.enabled = false
+        }
+    }
+
+    jacocoTestCoverageVerification {
+        violationRules {
+            rule {
+                limit {
+                    minimum = 0.25
+                }
+            }
+        }
+    }
+}
+
+task jacocoRootReport(type: JacocoReport) {
+    dependsOn = subprojects.test
+    additionalSourceDirs = files(subprojects.sourceSets.main.allSource.srcDirs)
+    sourceDirectories = files(subprojects.sourceSets.main.allSource.srcDirs)
+    classDirectories =  files(subprojects.sourceSets.main.output)
+    executionData = files(subprojects.jacocoTestReport.executionData)
+    reports {
+        html.enabled = true
+        xml.enabled = true
+        csv.enabled = false
+    }
+    onlyIf = {
+        true
+    }
+    doFirst {
+        executionData = files(executionData.findAll {
+            it.exists()
+        })
+    }
+}

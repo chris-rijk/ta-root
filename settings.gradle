@@ -1,0 +1,16 @@
+rootProject.name = 'ta-root'
+
+include 'webservices-common-api'
+include 'webservices-common-service'
+
+include 'webservices-authentication-api'
+include 'webservices-authentication-service'
+
+rootProject.children.each {project ->
+    String fileBaseName = project.name.replaceAll("-") { "/" }
+    String projectDirName = "$fileBaseName"
+    project.projectDir = new File(settingsDir, projectDirName)
+    project.buildFileName = "${project.name}.gradle"
+    assert project.projectDir.isDirectory()
+    assert project.buildFile.isFile()
+}

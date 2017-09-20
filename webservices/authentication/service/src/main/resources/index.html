@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8"/>
+    <title>Authentication</title>
+    <style type="text/css">
+        json { white-space: pre; }
+        pre {outline: 1px solid #ccc; padding: 5px; margin: 5px; }
+        .string { color: green; }
+        .number { color: darkorange; }
+        .boolean { color: blue; }
+        .null { color: magenta; }
+        .key { color: red; }
+    </style>
+</head>
+<body>
+
+Request body:
+<div id="request" class="json">&nbsp;</div>
+
+Response status:
+<div id="responseType">&nbsp;</div>
+
+Response body:
+<div id="response" class="json">&nbsp;</div>
+
+<br/>
+
+<div>
+    <button id="testAdminOnly">Test admin role</button>
+    <button id="testAnyUser">Test user role</button>
+    <button id="adminLogin">Admin Login</button>
+    <button id="userLogin">User Login</button>
+    <button id="badLogin">Bad Login</button>
+    <button id="logout">Logout</button>
+</div>
+<script type="text/javascript" src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
+<script type="text/javascript">
+    function clear() {
+        $(document).ready(function () {
+            $('#request').html("&nbsp;");
+            $('#responseType').html("&nbsp;");
+            $('#response').html("&nbsp;");
+        });
+    }
+
+    function ppJson(json) {
+        return "<pre>"+syntaxHighlight(json)+"</pre>";
+    }
+
+    function syntaxHighlight(json) {
+        if (typeof json != 'string') {
+            json = JSON.stringify(json, undefined, 2);
+        }
+        json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+            var cls = 'number';
+            if (/^"/.test(match)) {
+                if (/:$/.test(match)) {
+                    cls = 'key';
+                } else {
+                    cls = 'string';
+                }
+            } else if (/true|false/.test(match)) {
+                cls = 'boolean';
+            } else if (/null/.test(match)) {
+                cls = 'null';
+            }
+            return '<span class="' + cls + '">' + match + '</span>';
+        });
+    }
+
+    function success(data, textStatus, jqXHR) {
+        $(document).ready(function () {
+            $('#responseType').html("<pre>Success: "+jqXHR.status+" ("+textStatus+")</pre>");
+            $('#response').html(ppJson(jqXHR.responseText));
+        });
+    }
+
+    function error(jqXHR, textStatus, errorThrown) {
+        $(document).ready(function () {
+            $('#responseType').html("<pre>Error: "+jqXHR.status+" ("+errorThrown+")</pre>");
+            $('#response').html("<pre>"+jqXHR.responseText+"</pre>");
+        });
+    }
+
+    function doGet(url) {
+        clear();
+
+        $.ajax({
+            type: 'GET',
+            url: url,
+            beforeSend: function (xhr) {
+                if (localStorage.token) {
+                    xhr.setRequestHeader('Authorization', 'Bearer ' + localStorage.token);
+                }
+            },
+            success: function (data, textStatus, jqXHR ) {
+                success(data, textStatus, jqXHR);
+            },
+            error: function (jqXHR, textStatus, errorThrown) {
+                error(jqXHR, textStatus, errorThrown);
+            }
+        });
+    }
+
+    function doPost(url, data) {
+        clear();
+
+        var postData = JSON.stringify(data);
+        $('#request').html(ppJson(postData));
+
+        $.ajax({
+            type: 'POST',
+            url: url,
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            dataType: 'json',
+            data: postData,
+            success: function (data, textStatus, jqXHR) {
+                success(data, textStatus, jqXHR);
+                localStorage.token = data.tokenString;
+            },
+            error: function (jqXHR, textStatus, errorThrown) {
+                error(jqXHR, textStatus, errorThrown);
+            }
+        });
+    }
+
+    $(document).ready(function () {
+        $('#testAdminOnly').click(function () {
+            doGet('/authentication/getAdminUserStatus');
+        });
+        $('#testAnyUser').click(function () {
+            doGet('/authentication/getUserStatus');
+        });
+        $('#adminLogin').click(function () {
+            doPost('/authentication/login', {
+                username: "john.doe",
+                password: "foobar"
+            });
+        });
+        $('#userLogin').click(function () {
+            doPost('/authentication/login', {
+                username: "joe.blogs",
+                password: "wibble"
+            });
+        });
+        $('#badLogin').click(function () {
+            doPost('/authentication/login', {
+                username: "john.doe",
+                password: "foobarfoobar"
+            });
+        });
+        $('#logout').click(function () {
+            localStorage.clear();
+            clear();
+        });
+    });
+</script>
+</body>
+
+</html>

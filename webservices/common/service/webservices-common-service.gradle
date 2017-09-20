@@ -1,0 +1,7 @@
+dependencies {
+    compile project(':webservices-common-api')
+    compile libraries.jersey
+    compile libraries.jwt
+
+    testCompile libraries.junit
+}

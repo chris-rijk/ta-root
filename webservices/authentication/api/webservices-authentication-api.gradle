@@ -1,0 +1,5 @@
+dependencies {
+    compile project(':webservices-common-api')
+    compile libraries.jax_rs
+    compile libraries.jersey
+}
